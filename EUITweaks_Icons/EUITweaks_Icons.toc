@@ -1,0 +1,13 @@
+## Interface: 16001
+## Title: EUI Tweaks Icon Data
+## Title-deDE: EUI Tweaks Icon-Daten
+## IconTexture: Interface\AddOns\EUITweaks\Media\Icon
+## Notes: Icon names and categories for the EUI Tweaks icon search. Loads on demand.
+## Notes-deDE: Icon-Namen und Kategorien für die Icon-Suche von EUI Tweaks. Wird bei Bedarf geladen.
+## Author: HeartOfD2
+## Version: @project-version@
+## Dependencies: EUITweaks
+## LoadOnDemand: 1
+## X-License: Unlicense
+
+IconData.lua
