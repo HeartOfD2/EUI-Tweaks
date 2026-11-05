@@ -192,6 +192,57 @@ function EUI.IconPickerCell(popup)
     return nil
 end
 
+-- ---------------------------------------------------------------- Shifter (Quality of Life)
+-- EllesmereUI's Shifter saves a moved window by its frame name in EllesmereUIDB.shifterPositions
+-- and its zoom in EllesmereUIDB.shifterScales. "Reset Specific Window" clears both entries and
+-- reloads; the window takes its default place on the new load (checked against EllesmereUI 9.7.2).
+local function ShifterTables()
+    local db = rawget(_G, "EllesmereUIDB")
+    if type(db) ~= "table" then return nil, nil end
+    local p, s = db.shifterPositions, db.shifterScales
+    return type(p) == "table" and p or nil, type(s) == "table" and s or nil
+end
+
+function EUI.ShifterOn()
+    local db = rawget(_G, "EllesmereUIDB")
+    return type(db) == "table" and db.shifterEnabled == true
+end
+
+-- set of frame names with a saved position or zoom
+function EUI.ShifterSaved()
+    local out = {}
+    local p, s = ShifterTables()
+    for name in pairs(p or {}) do if type(name) == "string" then out[name] = true end end
+    for name in pairs(s or {}) do if type(name) == "string" then out[name] = true end end
+    return out
+end
+
+function EUI.ShifterForget(name)
+    local p, s = ShifterTables()
+    if p then p[name] = nil end
+    if s then s[name] = nil end
+end
+
+-- EllesmereUI's confirm popup. With reload = true its confirm click asks for the reload first
+-- and runs onConfirm after it (WoW Forever reloads only from a click or a key press, and only
+-- when the reload comes first). Fallback: a Blizzard popup that does the same.
+function EUI.ConfirmReload(title, message, confirmText, onConfirm)
+    local e = Lib()
+    if e and type(e.ShowConfirmPopup) == "function" then
+        local ok = pcall(e.ShowConfirmPopup, e, { title = title, message = message, confirmText = confirmText,
+            cancelText = CANCEL, reload = true, onConfirm = function() onConfirm() end })
+        if ok then return end
+    end
+    StaticPopupDialogs.EUITWEAKS_CONFIRM_RELOAD = {
+        text = message, button1 = confirmText, button2 = CANCEL, timeout = 0, whileDead = true, hideOnEscape = true,
+        OnAccept = function()
+            ReloadUI()
+            onConfirm()
+        end,
+    }
+    StaticPopup_Show("EUITWEAKS_CONFIRM_RELOAD")
+end
+
 -- ---------------------------------------------------------------- saved data (ColorRewrite)
 function EUI.ActiveProfileName()
     local fn = Fn(Lib(), "GetActiveProfileName")
@@ -220,7 +271,8 @@ function EUI.SavedTables()
     return out
 end
 
--- ---------------------------------------------------------------- EverFrame (same functions twice)
+-- ---------------------------------------------------------------- BeautifulRogue (same functions twice)
+-- BeautifulRogue was called EverFrame up to 1.0; both names are checked (frame names follow the addon name).
 local function EverFrameButtonOn(cf, needle)
     if type(cf) ~= "table" or type(cf.GetChildren) ~= "function" then return false end
     for _, child in ipairs({ cf:GetChildren() }) do
@@ -232,22 +284,26 @@ local function EverFrameButtonOn(cf, needle)
     return false
 end
 
--- true when EverFrame runs the same function right now
-function EUI.EverFrameHas(feature)
-    if not Loaded("EverFrame") then return false end
+local function RogueHas(name, feature)
+    if not Loaded(name) then return false end
     if feature == "camera" then
-        -- EverFrame's fast zoom binds the zoom keys to its button while it is on
+        -- the fast zoom binds the zoom keys to its button while it is on
         if type(GetBindingKey) ~= "function" or type(GetBindingAction) ~= "function" then return false end
         for _, key in ipairs({ GetBindingKey("CAMERAZOOMIN") }) do
             local ok, action = pcall(GetBindingAction, key, true)
-            if ok and type(action) == "string" and action:find("EverFrameZoom", 1, true) then return true end
+            if ok and type(action) == "string" and action:find(name .. "Zoom", 1, true) then return true end
         end
         return false
     elseif feature == "chathide" then
-        local b = rawget(_G, "EverFrameChatButton")
+        local b = rawget(_G, name .. "ChatButton")
         return type(b) == "table" and b.IsShown and b:IsShown() or false
     elseif feature == "chatcopy" then
-        return EverFrameButtonOn(rawget(_G, "ChatFrame1"), "EverFrame\\Media\\ChatCopy")
+        return EverFrameButtonOn(rawget(_G, "ChatFrame1"), name .. "\\Media\\ChatCopy")
     end
     return false
+end
+
+-- true when BeautifulRogue (or the old EverFrame) runs the same function right now
+function EUI.EverFrameHas(feature)
+    return RogueHas("BeautifulRogue", feature) or RogueHas("EverFrame", feature)
 end

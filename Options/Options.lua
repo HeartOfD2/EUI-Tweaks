@@ -8,9 +8,11 @@
 local _, ns = ...
 local L, UI, EUI = ns.L, ns.UI, ns.EUI
 local Camera, ChatHide, ChatCopy, ZoneText = ns.Camera, ns.ChatHide, ns.ChatCopy, ns.ZoneText
+local WindowReset = ns.WindowReset
 local IconSearch, Rewrite = ns.IconSearch, ns.ColorRewrite
 
 local PAGE_CAMERA, PAGE_HIDE, PAGE_COPY, PAGE_ZONE = L["Camera"], L["Hide chat"], L["Copy chat"], L["Zone text"]
+local PAGE_RESET = L["Window reset"]
 local PAGE_ICONS = L["Icon search"]
 local PAGE_COLORS = L["Replace colors"]
 
@@ -33,7 +35,7 @@ local WARN = { 1, 0.6, 0.3, 1 }
 
 local function Conflict(parent, y, feature)
     if EUI.IsSearchPrebuild() or not EUI.EverFrameHas(feature) then return 0 end
-    return Hint(parent, y, L["This function is also on in EverFrame. Turn one of them off."], WARN)
+    return Hint(parent, y, L["This function is also on in BeautifulRogue. Turn one of them off."], WARN)
 end
 
 -- ---------------------------------------------------------------- Tweaks > Camera
@@ -171,6 +173,30 @@ local function BuildZone(W, parent, y)
     return y
 end
 
+-- ---------------------------------------------------------------- Tweaks > Window reset
+local function BuildReset(W, parent, y)
+    local _, h
+    local function off() return not WindowReset.Get("on") end
+    _, h = W:SectionHeader(parent, L["RESET WINDOW BY KEY"], y); y = y - h
+    _, h = W:DualRow(parent, y,
+        { type = "toggle", text = L["Reset the window under the mouse"], getValue = function() return WindowReset.Get("on") end,
+          setValue = function(v) WindowReset.Set("on", v) Refresh() end },
+        { type = "toggle", text = L["Reset without asking"], getValue = function() return WindowReset.Get("noAsk") end,
+          setValue = function(v) WindowReset.Set("noAsk", v) end, disabled = off,
+          tooltip = L["The key resets the window and reloads the UI at once, without the confirm popup."] }); y = y - h
+    y = y - Hint(parent, y, L["Point at a window you moved or zoomed with EllesmereUI's Shifter (Quality of Life > Shifter) and press the key: it goes back to its default position and zoom, like \"Reset Specific Window\". EllesmereUI places it back only after a reload, so the UI reloads."])
+    local key = WindowReset.KeyText()
+    if key then
+        y = y - Hint(parent, y, L["Key: %s (change it in the game's Options > Keybindings > AddOns > EUI Tweaks)."]:format(key))
+    else
+        y = y - Hint(parent, y, L["No key set yet: choose one in the game's Options > Keybindings > AddOns > EUI Tweaks."], WARN)
+    end
+    if not EUI.ShifterOn() then
+        y = y - Hint(parent, y, L["EllesmereUI's Shifter is off: windows saved earlier can still be reset."])
+    end
+    return y
+end
+
 -- ---------------------------------------------------------------- Extensions > Icon search
 local function IconDataInstalled()
     local exists = C_AddOns and C_AddOns.DoesAddOnExist
@@ -188,7 +214,7 @@ local function BuildIcons(W, parent, y)
     if not IconDataInstalled() then
         y = y - Hint(parent, y, L["The icon data (folder EUITweaks_Icons) is missing: only spell and item names can be searched, the filter is not available."], WARN)
     else
-        y = y - Hint(parent, y, L["The icon data (EUITweaks_Icons, about 33,000 icons) loads only when the window opens for the first time."])
+        y = y - Hint(parent, y, L["The icon data (EUITweaks_Icons, about 30,000 icons) loads only when the window opens for the first time."])
     end
     return y
 end
@@ -327,7 +353,7 @@ end
 -- ---------------------------------------------------------------- registration
 local BUILDERS = {
     [PAGE_CAMERA] = BuildCamera, [PAGE_HIDE] = BuildHide, [PAGE_COPY] = BuildCopy, [PAGE_ZONE] = BuildZone,
-    [PAGE_ICONS] = BuildIcons, [PAGE_COLORS] = BuildColors,
+    [PAGE_RESET] = BuildReset, [PAGE_ICONS] = BuildIcons, [PAGE_COLORS] = BuildColors,
 }
 
 local function BuildPage(pageName, parent, yOffset)
@@ -346,12 +372,12 @@ local function Register()
         position = "top",
         modules = {
             { key = "Tweaks", title = L["Tweaks"],
-              description = L["Camera zoom, hide chat, a better copy-chat window and the sub zone on the minimap."],
-              pages = { PAGE_CAMERA, PAGE_HIDE, PAGE_COPY, PAGE_ZONE }, buildPage = BuildPage,
+              description = L["Camera zoom, hide chat, a better copy-chat window, the sub zone on the minimap and a key to reset a moved window."],
+              pages = { PAGE_CAMERA, PAGE_HIDE, PAGE_COPY, PAGE_ZONE, PAGE_RESET }, buildPage = BuildPage,
               onPageCacheRestore = Refresh,
               onReset = function()
                   ChatHide.SetHidden(false)   -- bring the chat back before its settings go
-                  Camera.Reset() ChatHide.Reset() ChatCopy.Reset() ZoneText.Reset()
+                  Camera.Reset() ChatHide.Reset() ChatCopy.Reset() ZoneText.Reset() WindowReset.Reset()
                   Rebuild()
               end },
             { key = "Extensions", title = L["Extensions"],

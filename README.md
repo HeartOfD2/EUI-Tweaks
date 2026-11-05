@@ -34,6 +34,9 @@ its options into the EllesmereUI panel (section **Tweaks+**).
   with position and X/Y offset.
 - **Extensions > Icon search:** a search line and a category filter (classes, weapons, armor, magic, professions ...)
   in EllesmereUI's macro "Choose Icon" window. The icon data loads only when the window opens.
+- **Tweaks > Window reset:** a key binding (Key Bindings › AddOns › EUI Tweaks) puts the window under the mouse back to
+  its default position and zoom, like "Reset Specific Window" of EllesmereUI's Shifter. It asks first unless you
+  switch that off.
 - **ColorRewrite:** find one color (for example `#29BDAC`) everywhere in the EllesmereUI settings, also where you
   typed it by hand, and replace it with another. The list shows every place first; the last replace can be undone.
 
@@ -41,7 +44,7 @@ Every function is off until you switch it on. `/eut` opens the options.
 
 ## Install
 
-Copy the `EUITweaks` and `EUITweaks_Icons` folders into `World of Warcraft\_classic_beta_\Interface\AddOns`
+Copy the `EUITweaks` and `EUITweaks_Icons` folders into `World of Warcraft\_forever_\Interface\AddOns`
 (WoW: Forever), or install through CurseForge.
 
 ## Notes

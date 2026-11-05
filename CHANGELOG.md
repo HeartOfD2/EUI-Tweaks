@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0 (2026-11-05)
+
+- **The icon search matches this game again.** Its icon data had been built from a Retail client: it offered about 2,500 icons World of Warcraft: Forever does not have (empty tiles in the filter) and was missing the ones Forever brought. It is now built from the Forever client, 30,550 icons.
+- Tweaks > Window reset: a key binding (game key bindings > AddOns > EUI Tweaks) resets the window under the
+  mouse to its default position and zoom, like "Reset Specific Window" of EllesmereUI's Shifter. Asks first by
+  default; "Reset without asking" reloads at once.
+
 ## 0.1.0
 
 - First version.

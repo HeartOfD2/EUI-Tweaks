@@ -4,7 +4,7 @@
 ## Notes: Extra tweaks for EllesmereUI: fast camera zoom, hide chat, a better copy-chat window, searchable macro icons and a color rewriter.
 ## Notes-deDE: Extras für EllesmereUI: schneller Kamera-Zoom, Chat ausblenden, besseres Chat-Kopierfenster, durchsuchbare Makro-Icons und ein Farb-Ersetzer.
 ## Author: HeartOfD2
-## Version: 0.1.0
+## Version: 0.2.0
 ## X-License: MIT
 ## IconTexture: Interface\AddOns\EUITweaks\Media\Icon
 ## X-Website: https://github.com/HeartOfD2/EUI-Tweaks
@@ -12,7 +12,7 @@
 ## Category: Interface Enhancements
 ## Category-deDE: Interface-Verbesserungen
 ## Dependencies: EllesmereUI
-## OptionalDeps: EllesmereUIChat, EllesmereUIMinimap, EllesmereUIOptions, EverFrame
+## OptionalDeps: EllesmereUIChat, EllesmereUIMinimap, EllesmereUIOptions, EverFrame, BeautifulRogue
 ## SavedVariables: EUITweaksDB
 ## AddonCompartmentFunc: EUITweaks_OnCompartmentClick
 ## AddonCompartmentFuncOnEnter: EUITweaks_OnCompartmentEnter
@@ -27,6 +27,7 @@ Modules\Camera.lua
 Modules\ChatHide.lua
 Modules\ChatCopy.lua
 Modules\ZoneText.lua
+Modules\WindowReset.lua
 Modules\IconFilter.lua
 Modules\IconSearch.lua
 Modules\ColorRewrite.lua

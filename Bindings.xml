@@ -1,0 +1,5 @@
+<Bindings>
+	<Binding name="EUITWEAKS_RESETWINDOW" header="EUITWEAKS" category="ADDONS">
+		EUITweaks_ResetHoveredWindow()
+	</Binding>
+</Bindings>
