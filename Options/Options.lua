@@ -8,11 +8,11 @@
 local _, ns = ...
 local L, UI, EUI = ns.L, ns.UI, ns.EUI
 local Camera, ChatHide, ChatCopy, ZoneText = ns.Camera, ns.ChatHide, ns.ChatCopy, ns.ZoneText
-local WindowReset = ns.WindowReset
+local WindowReset, ItemCount = ns.WindowReset, ns.ItemCount
 local IconSearch, Rewrite = ns.IconSearch, ns.ColorRewrite
 
 local PAGE_CAMERA, PAGE_HIDE, PAGE_COPY, PAGE_ZONE = L["Camera"], L["Hide chat"], L["Copy chat"], L["Zone text"]
-local PAGE_RESET = L["Window reset"]
+local PAGE_RESET, PAGE_COUNT = L["Window reset"], L["Item count"]
 local PAGE_ICONS = L["Icon search"]
 local PAGE_COLORS = L["Replace colors"]
 
@@ -197,6 +197,22 @@ local function BuildReset(W, parent, y)
     return y
 end
 
+-- ---------------------------------------------------------------- Tweaks > Item count
+local function BuildCount(W, parent, y)
+    local _, h
+    _, h = W:SectionHeader(parent, L["ITEM COUNT"], y); y = y - h
+    _, h = W:Toggle(parent, L["Item count in tooltips"], y, function() return ItemCount.Get("on") end,
+        function(v) ItemCount.Set("on", v) Refresh() end); y = y - h
+    _, h = W:DualRow(parent, y,
+        { type = "input", text = L["Format"], inputWidth = 120, getValue = function() return ItemCount.Format() end,
+          setValue = function(v) ItemCount.Set("format", v) Refresh() end,
+          disabled = function() return not ItemCount.Get("on") end },
+        { type = "label", text = "" }); y = y - h
+    y = y - Hint(parent, y, L["{count} is the count: [{count}] shows [20], {count} pcs shows 20 pcs. Without {count} the plain number shows."])
+    y = y - Hint(parent, y, L["Stackable items show in the top right corner of the tooltip how many of them this character has, all stacks added up, with the split between bags and bank once the bank holds some. The bank counts once the game knows its content, usually after you opened it."])
+    return y
+end
+
 -- ---------------------------------------------------------------- Extensions > Icon search
 local function IconDataInstalled()
     local exists = C_AddOns and C_AddOns.DoesAddOnExist
@@ -353,7 +369,7 @@ end
 -- ---------------------------------------------------------------- registration
 local BUILDERS = {
     [PAGE_CAMERA] = BuildCamera, [PAGE_HIDE] = BuildHide, [PAGE_COPY] = BuildCopy, [PAGE_ZONE] = BuildZone,
-    [PAGE_RESET] = BuildReset, [PAGE_ICONS] = BuildIcons, [PAGE_COLORS] = BuildColors,
+    [PAGE_RESET] = BuildReset, [PAGE_COUNT] = BuildCount, [PAGE_ICONS] = BuildIcons, [PAGE_COLORS] = BuildColors,
 }
 
 local function BuildPage(pageName, parent, yOffset)
@@ -372,12 +388,12 @@ local function Register()
         position = "top",
         modules = {
             { key = "Tweaks", title = L["Tweaks"],
-              description = L["Camera zoom, hide chat, a better copy-chat window, the sub zone on the minimap and a key to reset a moved window."],
-              pages = { PAGE_CAMERA, PAGE_HIDE, PAGE_COPY, PAGE_ZONE, PAGE_RESET }, buildPage = BuildPage,
+              description = L["Camera zoom, hide chat, a better copy-chat window, the sub zone on the minimap, a key to reset a moved window and item counts in tooltips."],
+              pages = { PAGE_CAMERA, PAGE_HIDE, PAGE_COPY, PAGE_ZONE, PAGE_RESET, PAGE_COUNT }, buildPage = BuildPage,
               onPageCacheRestore = Refresh,
               onReset = function()
                   ChatHide.SetHidden(false)   -- bring the chat back before its settings go
-                  Camera.Reset() ChatHide.Reset() ChatCopy.Reset() ZoneText.Reset() WindowReset.Reset()
+                  Camera.Reset() ChatHide.Reset() ChatCopy.Reset() ZoneText.Reset() WindowReset.Reset() ItemCount.Reset()
                   Rebuild()
               end },
             { key = "Extensions", title = L["Extensions"],

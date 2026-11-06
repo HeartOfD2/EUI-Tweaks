@@ -34,6 +34,9 @@ its options into the EllesmereUI panel (section **Tweaks+**).
   with position and X/Y offset.
 - **Extensions > Icon search:** a search line and a category filter (classes, weapons, armor, magic, professions ...)
   in EllesmereUI's macro "Choose Icon" window. The icon data loads only when the window opens.
+- **Tweaks > Item count:** stackable items show in the top right corner of the tooltip how many of them this character
+  has, all stacks added up, with the split between bags and bank once the bank holds some. A format field sets the text
+  around the number: `[{count}]` shows `[20]`, `{count} pcs` shows `20 pcs`.
 - **Tweaks > Window reset:** a key binding (Key Bindings › AddOns › EUI Tweaks) puts the window under the mouse back to
   its default position and zoom, like "Reset Specific Window" of EllesmereUI's Shifter. It asks first unless you
   switch that off.

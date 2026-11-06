@@ -8,7 +8,7 @@ L["The EllesmereUI options could not be opened."] = "Die EllesmereUI-Optionen li
 L["Click: open the options"] = "Klick: Optionen öffnen"
 L["Tweaks"] = "Tweaks"
 L["Extensions"] = "Erweiterungen"
-L["Camera zoom, hide chat, a better copy-chat window, the sub zone on the minimap and a key to reset a moved window."] = "Kamera-Zoom, Chat ausblenden, ein besseres Chat-Kopierfenster, die Subzone an der Minimap und eine Taste, die ein verschobenes Fenster zurücksetzt."
+L["Camera zoom, hide chat, a better copy-chat window, the sub zone on the minimap, a key to reset a moved window and item counts in tooltips."] = "Kamera-Zoom, Chat ausblenden, ein besseres Chat-Kopierfenster, die Subzone an der Minimap, eine Taste, die ein verschobenes Fenster zurücksetzt, und die Item-Anzahl im Tooltip."
 L["Additions to EllesmereUI windows."] = "Ergänzungen für EllesmereUI-Fenster."
 L["Replace one color everywhere in the EllesmereUI settings."] = "Eine Farbe überall in den EllesmereUI-Einstellungen ersetzen."
 L["This function is also on in BeautifulRogue. Turn one of them off."] = "Diese Funktion ist auch in BeautifulRogue an. Schalte eine davon aus."
@@ -237,3 +237,13 @@ L["Last replace: #%s -> #%s in %d places (can be undone)."] = "Zuletzt ersetzt: 
 L["Press \"Search\" to list the places that use the color."] = "„Suchen“ listet alle Stellen, die die Farbe verwenden."
 L["%d places found, %d selected"] = "%d Stellen gefunden, %d ausgewählt"
 L["... and %d more (all are replaced when selected)"] = "... und %d weitere (werden mit ersetzt, wenn ausgewählt)"
+
+-- item count
+L["Item count"] = "Item-Anzahl"
+L["ITEM COUNT"] = "ITEM-ANZAHL"
+L["Item count in tooltips"] = "Item-Anzahl im Tooltip"
+L["Stackable items show in the top right corner of the tooltip how many of them this character has, all stacks added up, with the split between bags and bank once the bank holds some. The bank counts once the game knows its content, usually after you opened it."] = "Stapelbare Items zeigen oben rechts im Tooltip, wie viele dieser Charakter davon hat, alle Stapel zusammengezählt, und liegt etwas in der Bank, auch die Aufteilung auf Taschen und Bank. Die Bank zählt, sobald das Spiel ihren Inhalt kennt, meist nachdem du sie geöffnet hast."
+L["You have"] = "Du hast"
+L["%s (bags %d, bank %d)"] = "%s (Taschen %d, Bank %d)"
+L["Format"] = "Format"
+L["{count} is the count: [{count}] shows [20], {count} pcs shows 20 pcs. Without {count} the plain number shows."] = "{count} ist die Anzahl: [{count}] zeigt [20], {count} Stück zeigt 20 Stück. Ohne {count} steht dort nur die Zahl."

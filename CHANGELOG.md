@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0 (2026-11-06)
+
+- Tweaks > Item count: stackable items show in the top right corner of the tooltip how many of them this character
+  has, all stacks added up, with the split between bags and bank once the bank holds some. A format field sets the
+  text around the number: `[{count}]` shows `[20]`, `{count} pcs` shows `20 pcs`. Off by default.
+
 ## 0.2.0 (2026-11-05)
 
 - **The icon search matches this game again.** Its icon data had been built from a Retail client: it offered about 2,500 icons World of Warcraft: Forever does not have (empty tiles in the filter) and was missing the ones Forever brought. It is now built from the Forever client, 30,550 icons.
