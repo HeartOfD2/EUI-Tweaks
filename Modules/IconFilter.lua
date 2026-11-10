@@ -159,65 +159,69 @@ function IconFilter.Cancel()
 end
 
 -- ---------------------------------------------------------------- the filter menu
-local GROUPS = {
-    { name = L["General"], entries = {
-        { "Ability", L["Abilities"] }, { "Achievement", L["Achievements"] }, { "Housing", L["Housing"] },
-        { "Item", L["Items"] }, { "Pet", L["Pets"] }, { "Mount", L["Mounts"] },
-        { "Alliance", L["Alliance"] }, { "Horde", L["Horde"] }, { "OtherFactions", L["Other factions"] },
-    } },
-    { name = L["Classes"], entries = {
-        { "Warrior", L["Warrior"] }, { "Paladin", L["Paladin"] }, { "Hunter", L["Hunter"] },
-        { "Rogue", L["Rogue"] }, { "Priest", L["Priest"] }, { "DeathKnight", L["Death Knight"] },
-        { "Shaman", L["Shaman"] }, { "Mage", L["Mage"] }, { "Warlock", L["Warlock"] },
-        { "Monk", L["Monk"] }, { "Druid", L["Druid"] }, { "DemonHunter", L["Demon Hunter"] },
-        { "Evoker", L["Evoker"] },
-    } },
-    { name = L["Weapons"], entries = {
-        { "Weapon", L["All weapons"] }, { "WeaponTypeSword", L["Swords"] }, { "WeaponTypeAxe", L["Axes"] },
-        { "WeaponTypeMace", L["Maces"] }, { "WeaponTypeDagger", L["Daggers"] },
-        { "WeaponTypeFists", L["Fist weapons"] }, { "WeaponTypePolearm", L["Polearms"] },
-        { "WeaponTypeStaff", L["Staves"] }, { "WeaponTypeWarglaive", L["Warglaives"] },
-        { "WeaponTypeBow", L["Bows"] }, { "WeaponTypeCrossbow", L["Crossbows"] }, { "WeaponTypeGun", L["Guns"] },
-        { "WeaponTypeWand", L["Wands"] }, { "WeaponTypeThrown", L["Thrown"] }, { "WeaponTypeAmmo", L["Ammunition"] },
-    } },
-    { name = L["Armor"], entries = {
-        { "Armor", L["All armor"] }, { "ClothArmor", L["Cloth"] }, { "LeatherArmor", L["Leather"] },
-        { "MailArmor", L["Mail"] }, { "PlateArmor", L["Plate"] }, { "Jewelry", L["Jewelry"] },
-        { "InventorySlotShield", L["Shields"] }, { "InventorySlotOffHand", L["Off-hands"] },
-        { "InventorySlotTrinket", L["Trinkets"] }, { "InventorySlotRing", L["Rings"] },
-        { "InventorySlotNeck", L["Necklaces"] },
-    } },
-    { name = L["Equipment slots"], entries = {
-        { "InventorySlotHead", L["Head"] }, { "InventorySlotShoulders", L["Shoulders"] },
-        { "InventorySlotChest", L["Chest"] }, { "InventorySlotBack", L["Back"] },
-        { "InventorySlotWrists", L["Wrists"] }, { "InventorySlotHands", L["Hands"] },
-        { "InventorySlotWaist", L["Waist"] }, { "InventorySlotLegs", L["Legs"] },
-        { "InventorySlotFeet", L["Feet"] }, { "InventorySlotShirt", L["Shirts"] },
-        { "InventorySlotTabard", L["Tabards"] },
-    } },
-    { name = L["Magic"], entries = {
-        { "ArcaneMagic", L["Arcane"] }, { "FireMagic", L["Fire"] }, { "FrostMagic", L["Frost"] },
-        { "NatureMagic", L["Nature"] }, { "HolyMagic", L["Holy"] }, { "ShadowMagic", L["Shadow"] },
-        { "FelMagic", L["Fel"] }, { "VoidMagic", L["Void"] },
-    } },
-    { name = L["Professions"], entries = {
-        { "Professions", L["All professions"] }, { "Alchemy", L["Alchemy"] },
-        { "Blacksmithing", L["Blacksmithing"] }, { "Enchanting", L["Enchanting"] },
-        { "Engineering", L["Engineering"] }, { "Herbalism", L["Herbalism"] },
-        { "Inscription", L["Inscription"] }, { "Jewelcrafting", L["Jewelcrafting"] },
-        { "Leatherworking", L["Leatherworking"] }, { "Mining", L["Mining"] },
-        { "Skinning", L["Skinning"] }, { "Tailoring", L["Tailoring"] }, { "Cooking", L["Cooking"] },
-        { "Fishing", L["Fishing"] }, { "FirstAid", L["First Aid"] }, { "Archaeology", L["Archaeology"] },
-    } },
-    { name = L["Consumables"], entries = {
-        { "Potion", L["Potions"] }, { "Food", L["Food"] }, { "Drink", L["Drinks"] },
-        { "TradeGoods", L["Trade goods"] },
-    } },
-}
+-- The names need the chosen language, so the list is built once the saved variables are there.
+local GROUPS = {}
+ns.On("DB_READY", function()
+    GROUPS = {
+        { name = L["General"], entries = {
+            { "Ability", L["Abilities"] }, { "Achievement", L["Achievements"] }, { "Housing", L["Housing"] },
+            { "Item", L["Items"] }, { "Pet", L["Pets"] }, { "Mount", L["Mounts"] },
+            { "Alliance", L["Alliance"] }, { "Horde", L["Horde"] }, { "OtherFactions", L["Other factions"] },
+        } },
+        { name = L["Classes"], entries = {
+            { "Warrior", L["Warrior"] }, { "Paladin", L["Paladin"] }, { "Hunter", L["Hunter"] },
+            { "Rogue", L["Rogue"] }, { "Priest", L["Priest"] }, { "DeathKnight", L["Death Knight"] },
+            { "Shaman", L["Shaman"] }, { "Mage", L["Mage"] }, { "Warlock", L["Warlock"] },
+            { "Monk", L["Monk"] }, { "Druid", L["Druid"] }, { "DemonHunter", L["Demon Hunter"] },
+            { "Evoker", L["Evoker"] },
+        } },
+        { name = L["Weapons"], entries = {
+            { "Weapon", L["All weapons"] }, { "WeaponTypeSword", L["Swords"] }, { "WeaponTypeAxe", L["Axes"] },
+            { "WeaponTypeMace", L["Maces"] }, { "WeaponTypeDagger", L["Daggers"] },
+            { "WeaponTypeFists", L["Fist weapons"] }, { "WeaponTypePolearm", L["Polearms"] },
+            { "WeaponTypeStaff", L["Staves"] }, { "WeaponTypeWarglaive", L["Warglaives"] },
+            { "WeaponTypeBow", L["Bows"] }, { "WeaponTypeCrossbow", L["Crossbows"] }, { "WeaponTypeGun", L["Guns"] },
+            { "WeaponTypeWand", L["Wands"] }, { "WeaponTypeThrown", L["Thrown"] }, { "WeaponTypeAmmo", L["Ammunition"] },
+        } },
+        { name = L["Armor"], entries = {
+            { "Armor", L["All armor"] }, { "ClothArmor", L["Cloth"] }, { "LeatherArmor", L["Leather"] },
+            { "MailArmor", L["Mail"] }, { "PlateArmor", L["Plate"] }, { "Jewelry", L["Jewelry"] },
+            { "InventorySlotShield", L["Shields"] }, { "InventorySlotOffHand", L["Off-hands"] },
+            { "InventorySlotTrinket", L["Trinkets"] }, { "InventorySlotRing", L["Rings"] },
+            { "InventorySlotNeck", L["Necklaces"] },
+        } },
+        { name = L["Equipment slots"], entries = {
+            { "InventorySlotHead", L["Head"] }, { "InventorySlotShoulders", L["Shoulders"] },
+            { "InventorySlotChest", L["Chest"] }, { "InventorySlotBack", L["Back"] },
+            { "InventorySlotWrists", L["Wrists"] }, { "InventorySlotHands", L["Hands"] },
+            { "InventorySlotWaist", L["Waist"] }, { "InventorySlotLegs", L["Legs"] },
+            { "InventorySlotFeet", L["Feet"] }, { "InventorySlotShirt", L["Shirts"] },
+            { "InventorySlotTabard", L["Tabards"] },
+        } },
+        { name = L["Magic"], entries = {
+            { "ArcaneMagic", L["Arcane"] }, { "FireMagic", L["Fire"] }, { "FrostMagic", L["Frost"] },
+            { "NatureMagic", L["Nature"] }, { "HolyMagic", L["Holy"] }, { "ShadowMagic", L["Shadow"] },
+            { "FelMagic", L["Fel"] }, { "VoidMagic", L["Void"] },
+        } },
+        { name = L["Professions"], entries = {
+            { "Professions", L["All professions"] }, { "Alchemy", L["Alchemy"] },
+            { "Blacksmithing", L["Blacksmithing"] }, { "Enchanting", L["Enchanting"] },
+            { "Engineering", L["Engineering"] }, { "Herbalism", L["Herbalism"] },
+            { "Inscription", L["Inscription"] }, { "Jewelcrafting", L["Jewelcrafting"] },
+            { "Leatherworking", L["Leatherworking"] }, { "Mining", L["Mining"] },
+            { "Skinning", L["Skinning"] }, { "Tailoring", L["Tailoring"] }, { "Cooking", L["Cooking"] },
+            { "Fishing", L["Fishing"] }, { "FirstAid", L["First Aid"] }, { "Archaeology", L["Archaeology"] },
+        } },
+        { name = L["Consumables"], entries = {
+            { "Potion", L["Potions"] }, { "Food", L["Food"] }, { "Drink", L["Drinks"] },
+            { "TradeGoods", L["Trade goods"] },
+        } },
+    }
 
-for gi, g in ipairs(GROUPS) do
-    for _, e in ipairs(g.entries) do IconFilter.groupOf[e[1]] = gi end
-end
+    for gi, g in ipairs(GROUPS) do
+        for _, e in ipairs(g.entries) do IconFilter.groupOf[e[1]] = gi end
+    end
+end)
 
 local function CountIn(group)
     local n = 0

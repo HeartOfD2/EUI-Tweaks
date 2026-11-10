@@ -4,16 +4,18 @@
 -- With EllesmereUI Chat the chat is hidden through EllesmereUI's own
 -- visibility rule (its "visibilityOverride" = "never"), which fades its
 -- background, sidebar, borders and tab strip as well; the previous value is put
--- back on show and before logout, so EllesmereUI never saves our override.
+-- back on show, on a profile switch and before logout, so EllesmereUI never
+-- saves our override.
 -- Without EllesmereUI Chat the Blizzard frames are hidden (Hide/Show only).
--- Enter, a reply or Edit Mode reveal the chat. The button uses the
+-- With EllesmereUI Chat the frames are also hidden at once, so the chat does not fade out over a second
+-- (unless the "Fade" option is on). Enter, a reply or Edit Mode reveal the chat. The button uses the
 -- EllesmereUI accent unless a color is picked.
 -- ---------------------------------------------------------------------------
 local _, ns = ...
 local L, UI, EUI = ns.L, ns.UI, ns.EUI
 
 local Chat = ns.Module("chathide",
-    { on = false, hidden = false, locked = true, corner = "BOTTOMLEFT", size = 20, alpha = 0.9 },
+    { on = false, hidden = false, fade = false, locked = true, corner = "BOTTOMLEFT", size = 20, alpha = 0.9 },
     { size = { 16, 48 }, alpha = { 0.2, 1 } })
 ns.ChatHide = Chat
 
@@ -55,17 +57,47 @@ function Chat.ResetAnchor()
 end
 
 -- ---------------------------------------------------------------- EllesmereUI Chat
+-- The override lives in one EllesmereUI profile's chat settings. We remember that settings table
+-- (overrideStore) and, saved with our own settings in case the game ends without a logout,
+-- store.override = { profile = <name>, prev = <the profile's own value> }.
 local OVERRIDE = "visibilityOverride"
-local overriding = false
+local overrideStore, overridePrev   -- the memory copy of store.override (a reset of our settings may drop the saved one)
+
+-- puts the profile's own value back (only while our "never" is still there: a value the player
+-- chose in the meantime stays) and forgets the override
+local function GiveBack()
+    local s = Chat.Store()
+    local saved = s.override
+    local store, prev = overrideStore, overridePrev
+    if not store and saved then store, prev = EUI.ChatStoreOf(saved.profile), saved.prev end
+    if store and store[OVERRIDE] == "never" then
+        store[OVERRIDE] = prev
+        EUI.RequestVisibilityUpdate()
+    end
+    overrideStore, overridePrev, s.override = nil, nil, nil
+end
 
 local function EuiHide()
     local store = EUI.ChatStore()
     if not store then return false end
-    if not overriding then
-        local s = Chat.Store()
-        s.prevOverride = store[OVERRIDE]
-        s.overrideSaved = true
-        overriding = true
+    local s = Chat.Store()
+    local name = EUI.ActiveProfileName()
+    -- an override of the old format (before it was kept per profile) belongs to the active profile
+    if s.overrideSaved then
+        s.override = { profile = name, prev = s.prevOverride }
+        s.overrideSaved, s.prevOverride = nil, nil
+    end
+    -- another profile is active now: the old one gets its value back first
+    if overrideStore and overrideStore ~= store then GiveBack() end
+    if overrideStore and not s.override then s.override = { profile = name, prev = overridePrev } end
+    if not overrideStore then
+        local saved = s.override
+        -- left behind by an earlier session that ended without a logout: its value is the real one, keep it
+        if not (saved and saved.profile == name and store[OVERRIDE] == "never") then
+            GiveBack()
+            s.override = { profile = name, prev = store[OVERRIDE] }
+        end
+        overrideStore, overridePrev = store, s.override.prev
     end
     store[OVERRIDE] = "never"
     EUI.RequestVisibilityUpdate()
@@ -74,13 +106,11 @@ end
 
 local function EuiShow()
     local s = Chat.Store()
-    if not (overriding or s.overrideSaved) then return end
-    local store = EUI.ChatStore()
-    if store then
-        store[OVERRIDE] = s.prevOverride
-        EUI.RequestVisibilityUpdate()
+    if s.overrideSaved then   -- old format, see EuiHide
+        s.override = { profile = EUI.ActiveProfileName(), prev = s.prevOverride }
+        s.overrideSaved, s.prevOverride = nil, nil
     end
-    overriding, s.prevOverride, s.overrideSaved = false, nil, nil
+    if overrideStore or s.override then GiveBack() end
 end
 
 -- ---------------------------------------------------------------- Blizzard frames
@@ -92,9 +122,36 @@ local active, editMode, installed = false, false, false
 local function Hidden() return active and Chat.Get("hidden") and not editMode end
 local function UseEui() return EUI.ChatStore() ~= nil end
 
-local function Add(f, edit)
+-- EllesmereUI shows its tab strip and panels again while it fades them, so Hide() does not hold for those:
+-- they are moved under a hidden frame instead (moved[f] = the parent to give back)
+local moved, hider = {}, nil
+
+local function Reparent(f, parent)
+    local keep = FrameUtil and FrameUtil.SetParentMaintainRenderLayering
+    if keep then return (pcall(keep, f, parent)) end
+    return (pcall(f.SetParent, f, parent))
+end
+
+local function Park(f)
+    if moved[f] then return end
+    if not hider then
+        hider = CreateFrame("Frame")
+        hider:Hide()
+    end
+    local parent = f:GetParent()
+    if parent and Reparent(f, hider) then moved[f] = parent end
+end
+
+local function Unpark(f)
+    local parent = moved[f]
+    if not parent then return end
+    moved[f] = nil
+    Reparent(f, parent)
+end
+
+local function Add(f, edit, park)
     if type(f) ~= "table" or managed[f] or type(f.Hide) ~= "function" then return end
-    managed[f] = {}
+    managed[f] = { park = park }
     order[#order + 1] = f
     if edit then return end   -- an edit box shows itself while typing; the hooks reveal the chat
     -- the game shows tabs and windows again when it docks them: keep them away while hidden
@@ -112,6 +169,8 @@ local function Add(f, edit)
     end)
 end
 
+local panelsAt = -100
+
 local function Collect()
     local n = tonumber(Global("NUM_CHAT_WINDOWS")) or 10
     local i = 1
@@ -124,17 +183,31 @@ local function Collect()
         i = i + 1
     end
     for _, name in ipairs(SINGLES) do Add(Global(name)) end
+    -- EllesmereUI's own panels: hidden and shown by us only (no hooks on them); the search walks all frames,
+    -- so it runs at most every few seconds
+    local now = GetTime()
+    if now - panelsAt > 5 then
+        panelsAt = now
+        local list, found = EUI.ChatPanels()
+        for _, f in ipairs(list) do Add(f, true, found[f]) end
+    end
 end
 
 local function BlizzHide()
     Collect()
     for _, f in ipairs(order) do
-        if f:IsShown() then wasShown[f] = true end
-        f:Hide()
+        if managed[f].park then
+            Park(f)
+        else
+            if f:IsShown() then wasShown[f] = true end
+            f:Hide()
+        end
     end
 end
 
 local function BlizzShow()
+    -- parents first: a tab that shows itself reads the frames around it
+    for _, f in ipairs(order) do Unpark(f) end
     for _, f in ipairs(order) do
         if wasShown[f] then
             wasShown[f] = nil
@@ -148,7 +221,12 @@ end
 function Chat.Update()
     if not installed then return end
     if Hidden() then
-        if not EuiHide() then BlizzHide() end
+        if EuiHide() then
+            -- EllesmereUI fades its chat out over a second; without "Fade" the frames go at once
+            if Chat.Get("fade") then BlizzShow() else BlizzHide() end
+        else
+            BlizzHide()
+        end
     else
         EuiShow()
         BlizzShow()
@@ -278,9 +356,19 @@ local function Install()
     end
 end
 
+-- EllesmereUI switches profiles live: the override moves to the new profile's chat settings
+local watching = false
+local function WatchProfiles()
+    if watching then return end
+    watching = true
+    EUI.OnProfileChange(function()
+        if active and installed then Chat.Update() end
+    end)
+end
+
 Chat.OnApply(function()
     active = Chat.Get("on")
-    if active then Install() end
+    if active then Install() WatchProfiles() end
     -- an override left behind by an earlier session (crash) is cleared first
     if not active then EuiShow() end
     if not installed then return end
@@ -294,10 +382,5 @@ end
 
 -- EllesmereUI saves its profile at logout: never with our override in it
 ns.RegisterEvent("PLAYER_LOGOUT", function()
-    if overriding then
-        local store = EUI.ChatStore()
-        if store then store[OVERRIDE] = Chat.Store().prevOverride end
-        overriding = false
-        Chat.Store().prevOverride, Chat.Store().overrideSaved = nil, nil
-    end
+    if overrideStore then GiveBack() end
 end)

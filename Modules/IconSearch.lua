@@ -35,7 +35,9 @@ local dataList, dataKey, dataDone, dataProgress = nil, nil, true, 1
 
 -- ---------------------------------------------------------------- spell and item names
 local nameIndex, indexDone, indexNext = nil, false, 1
-local INDEX_MAX_SPELL, INDEX_STEP = 40000, 2500
+-- spell IDs reach well past a million in the current client; each frame reads chunks of INDEX_STEP IDs
+-- until INDEX_BUDGET milliseconds are used up, so the game stays smooth while the index grows
+local INDEX_MAX_SPELL, INDEX_STEP, INDEX_BUDGET = 1600000, 2500, 6
 
 local function AddName(icon, name)
     if not icon or type(name) ~= "string" or name == "" or ns.IsSecret(name) then return end
@@ -81,16 +83,25 @@ end
 local RunSearch
 local indexer = CreateFrame("Frame")
 indexer:Hide()
-indexer:SetScript("OnUpdate", function(self)
-    if not (C_Spell and C_Spell.GetSpellInfo) then indexDone = true self:Hide() RunSearch() return end
-    local last = math.min(INDEX_MAX_SPELL, indexNext + INDEX_STEP - 1)
+local function IndexChunk()
+    local first = indexNext
+    local last = math.min(INDEX_MAX_SPELL, first + INDEX_STEP - 1)
+    indexNext = last + 1
     pcall(function()
-        for id = indexNext, last do
+        for id = first, last do
             local info = C_Spell.GetSpellInfo(id)
             if info and info.iconID then AddName(info.iconID, info.name) end
         end
     end)
-    indexNext = last + 1
+end
+
+indexer:SetScript("OnUpdate", function(self)
+    if not (C_Spell and C_Spell.GetSpellInfo) then indexDone = true self:Hide() RunSearch() return end
+    local clock = type(debugprofilestop) == "function" and debugprofilestop or nil
+    local started = clock and clock()
+    repeat
+        IndexChunk()
+    until indexNext > INDEX_MAX_SPELL or not clock or clock() - started >= INDEX_BUDGET
     if indexNext > INDEX_MAX_SPELL then
         indexDone = true
         self:Hide()

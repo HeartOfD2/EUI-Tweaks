@@ -11,6 +11,9 @@ ns.ADDON = addonName
 ns.MEDIA = "Interface\\AddOns\\" .. addonName .. "\\Media\\"
 ns.PLUGIN_ID = "EUITweaks"
 
+-- until the saved variables are there (ADDON_LOADED below): automatic
+ns.ChooseLocale()
+
 -- ---------------------------------------------------------------- helpers
 function ns.IsSecret(v)
     return type(issecretvalue) == "function" and issecretvalue(v) and true or false
@@ -127,10 +130,14 @@ function ns.ApplyAll()
     for _, m in ipairs(order) do m.Apply() end
 end
 
+-- settings of the addon itself; language: "auto" | "enUS" | "deDE", applied at load
+ns.General = ns.Module("general", { language = "auto" })
+
 ns.RegisterEvent("ADDON_LOADED", function(name)
     if name ~= addonName then return end
     if type(EUITweaksDB) ~= "table" then EUITweaksDB = {} end
     ns.db = EUITweaksDB
+    ns.ChooseLocale(ns.General.Get("language"))   -- before any text is read
     ns.Fire("DB_READY")
 end)
 

@@ -82,23 +82,59 @@ end
 
 -- EllesmereUI's "Display Sub Zone" puts the sub zone into its own box, which would
 -- leave ours empty: switching on turns it off (the old value is kept), switching off
--- puts it back. Changed only on these switches, never behind the player's back.
-local function TakeEuiSubZone(on)
-    local mm = EUI.MinimapSettings()
+-- puts it back. The value belongs to an EllesmereUI profile, so it is kept per profile
+-- name (store.eui[<profile>] = { prev = <old value> }); a profile switch takes the new
+-- profile's value too, and switching off gives back every profile's value.
+-- Changed only on these occasions, never behind the player's back.
+local function KeptValues()
     local s = Zone.Store()
-    if not mm then return end
-    if on and not s.euiTaken then
-        s.euiPrev = mm.zoneShowSubZone and true or false
-        s.euiTaken = true
-        mm.zoneShowSubZone = false
-    elseif not on and s.euiTaken then
-        mm.zoneShowSubZone = s.euiPrev or nil
+    if type(s.eui) ~= "table" then s.eui = {} end
+    -- a value kept before profiles were told apart belongs to the profile that is active now
+    if s.euiTaken then
+        local name = EUI.ActiveProfileName()
+        if name and not s.eui[name] then s.eui[name] = { prev = s.euiPrev and true or false } end
         s.euiTaken, s.euiPrev = nil, nil
-    else
-        return
     end
+    return s.eui
+end
+
+local function TakeEuiSubZone(on)
+    local kept = KeptValues()
+    local changed = false
+    if on then
+        local name = EUI.ActiveProfileName()
+        local mm = EUI.MinimapSettings()
+        if mm and name and not kept[name] then
+            kept[name] = { prev = mm.zoneShowSubZone and true or false }
+            mm.zoneShowSubZone = false
+            changed = true
+        end
+    else
+        for name, entry in pairs(kept) do
+            local mm = EUI.MinimapSettings(name)
+            if mm then
+                mm.zoneShowSubZone = entry.prev or nil
+                kept[name] = nil
+                changed = true
+            end
+        end
+        if next(kept) == nil then Zone.Store().eui = nil end
+    end
+    if not changed then return end
     if not zoneBox then zoneBox, zoneFS = EUI.ZoneTextBox() end
     EUI.RefreshZoneText(zoneBox)
+end
+
+-- EllesmereUI keeps one value per profile: after a switch the new profile is taken as well
+local watching = false
+local function WatchProfiles()
+    if watching then return end
+    watching = true
+    EUI.OnProfileChange(function()
+        if not active then return end
+        TakeEuiSubZone(true)
+        Zone.Update()
+    end)
 end
 
 -- a reset forgets the kept value: give it back first
@@ -111,6 +147,7 @@ end
 Zone.OnApply(function()
     active = Zone.Get("on")
     TakeEuiSubZone(active)
+    if active then WatchProfiles() end
     Zone.Update()
     -- EllesmereUI builds the minimap after login: look again shortly
     if active and not zoneBox then C_Timer.After(2, Zone.Update) end

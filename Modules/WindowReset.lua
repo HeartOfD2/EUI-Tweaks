@@ -15,7 +15,10 @@ ns.WindowReset = Reset
 
 Reset.BINDING = "EUITWEAKS_RESETWINDOW"
 BINDING_HEADER_EUITWEAKS = "EUI Tweaks"
-_G["BINDING_NAME_" .. Reset.BINDING] = L["Reset the window under the mouse"]
+-- the name needs the chosen language: set once the saved variables are there
+ns.On("DB_READY", function()
+    _G["BINDING_NAME_" .. Reset.BINDING] = L["Reset the window under the mouse"]
+end)
 
 -- the name EllesmereUI's list shows: "CharacterFrame" -> "Character", "AuctionHouseFrame" -> "Auction House"
 function Reset.Pretty(name)

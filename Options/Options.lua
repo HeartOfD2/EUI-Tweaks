@@ -11,10 +11,8 @@ local Camera, ChatHide, ChatCopy, ZoneText = ns.Camera, ns.ChatHide, ns.ChatCopy
 local WindowReset, ItemCount = ns.WindowReset, ns.ItemCount
 local IconSearch, Rewrite = ns.IconSearch, ns.ColorRewrite
 
-local PAGE_CAMERA, PAGE_HIDE, PAGE_COPY, PAGE_ZONE = L["Camera"], L["Hide chat"], L["Copy chat"], L["Zone text"]
-local PAGE_RESET, PAGE_COUNT = L["Window reset"], L["Item count"]
-local PAGE_ICONS = L["Icon search"]
-local PAGE_COLORS = L["Replace colors"]
+-- No text is read while this file loads: the language is chosen in ADDON_LOADED. Page names are
+-- looked up in Register (DB_READY), everything else when a page is built.
 
 local function Refresh() EUI.RefreshPage() end
 local function Rebuild() EUI.RefreshPage(true) end
@@ -78,6 +76,11 @@ local function BuildHide(W, parent, y)
         function(v) ChatHide.Set("on", v) Refresh() end); y = y - h
     y = y - Hint(parent, y, L["A button hides the chat windows, their tabs, the input box and the chat menu buttons (with EllesmereUI Chat also its background and sidebar). Enter, Edit Mode or a click bring them back."])
     y = y - Conflict(parent, y, "chathide")
+    _, h = W:DualRow(parent, y,
+        { type = "toggle", text = L["Fade"], getValue = function() return ChatHide.Get("fade") end,
+          setValue = function(v) ChatHide.Set("fade", v) end, disabled = off },
+        { type = "label", text = "" }); y = y - h
+    y = y - Hint(parent, y, L["Off: the chat disappears at once. On: it fades out and in like the EllesmereUI chat does by itself."])
     _, h = W:SectionHeader(parent, L["BUTTON"], y); y = y - h
     _, h = W:DualRow(parent, y,
         { type = "toggle", text = L["Lock button"], getValue = function() return ChatHide.Get("locked") end,
@@ -236,8 +239,6 @@ local function BuildIcons(W, parent, y)
 end
 
 -- ---------------------------------------------------------------- ColorRewrite
-local SCOPE_VALUES = { active = L["Active profile and global settings"], all = L["All profiles"] }
-
 local function Swatch(hex) return Rewrite.HexToRGB(hex) end
 
 local function ConfirmAndReload(text, action)
@@ -318,7 +319,7 @@ local function BuildColors(W, parent, y)
           getValue = function() return Swatch(Rewrite.Target()) end,
           setValue = function(r, g, b) Rewrite.Store().target = Rewrite.RGBToHex(r, g, b) Refresh() end }); y = y - h
     _, h = W:DualRow(parent, y,
-        { type = "dropdown", text = L["Search in"], values = SCOPE_VALUES, order = { "active", "all" },
+        { type = "dropdown", text = L["Search in"], values = { active = L["Active profile and global settings"], all = L["All profiles"] }, order = { "active", "all" },
           dropdownWidth = 230, getValue = function() return Rewrite.Scope() end,
           setValue = function(v) Rewrite.Store().scope = v Rebuild() end },
         { type = "slider", text = L["Tolerance"], min = 0, max = 5, step = 1,
@@ -366,11 +367,32 @@ local function BuildColors(W, parent, y)
     return y
 end
 
+-- ---------------------------------------------------------------- General > Language
+local LANGUAGES = { "auto", "enUS", "deDE" }
+
+local function BuildLanguage(W, parent, y)
+    local _, h
+    local General = ns.General
+    _, h = W:SectionHeader(parent, L["LANGUAGE"], y); y = y - h
+    _, h = W:DualRow(parent, y,
+        { type = "dropdown", text = L["Language"],
+          values = { auto = L["Automatic"], enUS = "English", deDE = "Deutsch" }, order = LANGUAGES,
+          getValue = function()
+              local v = General.Get("language")
+              return ns.locales[v] and v or "auto"
+          end,
+          setValue = function(v)
+              General.Set("language", v)
+              ns.Say(L["The language changes after a reload (/reload)."])
+          end },
+        { type = "button", text = L["Reload UI"], width = 180, onClick = function() ReloadUI() end }); y = y - h
+    y = y - Hint(parent, y, L["Automatic follows the language chosen in EllesmereUI, else the language of the game. A change shows after a reload (/reload)."])
+    y = y - Hint(parent, y, L["Names of spells, items and zones always stay in the language of the game."])
+    return y
+end
+
 -- ---------------------------------------------------------------- registration
-local BUILDERS = {
-    [PAGE_CAMERA] = BuildCamera, [PAGE_HIDE] = BuildHide, [PAGE_COPY] = BuildCopy, [PAGE_ZONE] = BuildZone,
-    [PAGE_RESET] = BuildReset, [PAGE_COUNT] = BuildCount, [PAGE_ICONS] = BuildIcons, [PAGE_COLORS] = BuildColors,
-}
+local BUILDERS = {}   -- page name -> builder, filled in Register
 
 local function BuildPage(pageName, parent, yOffset)
     local W = EUI.Widgets()
@@ -383,6 +405,14 @@ end
 local registered = false
 local function Register()
     if registered then return end
+    local PAGE_CAMERA, PAGE_HIDE, PAGE_COPY, PAGE_ZONE = L["Camera"], L["Hide chat"], L["Copy chat"], L["Zone text"]
+    local PAGE_RESET, PAGE_COUNT = L["Window reset"], L["Item count"]
+    local PAGE_ICONS, PAGE_COLORS, PAGE_LANGUAGE = L["Icon search"], L["Replace colors"], L["Language"]
+    BUILDERS = {
+        [PAGE_CAMERA] = BuildCamera, [PAGE_HIDE] = BuildHide, [PAGE_COPY] = BuildCopy, [PAGE_ZONE] = BuildZone,
+        [PAGE_RESET] = BuildReset, [PAGE_COUNT] = BuildCount, [PAGE_ICONS] = BuildIcons, [PAGE_COLORS] = BuildColors,
+        [PAGE_LANGUAGE] = BuildLanguage,
+    }
     registered = EUI.RegisterPlugin(ns.PLUGIN_ID, {
         label = "Tweaks+",
         position = "top",
@@ -408,6 +438,10 @@ local function Register()
                   s.source, s.target, s.scope, s.tolerance = nil, nil, nil, nil
                   Rebuild()
               end },
+            { key = "General", title = L["General"],
+              description = L["Language of EUI Tweaks."],
+              pages = { PAGE_LANGUAGE }, buildPage = BuildPage, onPageCacheRestore = Refresh,
+              onReset = function() ns.General.Reset() Rebuild() end },
         },
     })
 end

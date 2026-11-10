@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0 (2026-11-10)
+
+- New: language choice (Tweaks+ > General): Automatic, English or Deutsch, applied after /reload. Spell, item and zone names stay in the game's language.
+- Hide chat: with EllesmereUI Chat the chat, its tab strip and panels now vanish at once. The new option "Fade" (off by default) brings back EllesmereUI's own one-second fade.
+- Fixed: the zone text and hide chat settings follow EllesmereUI profile switches (the sub zone setting is kept per profile, a chat override no longer stays behind in the old profile or after a crash).
+- Fixed: fast zoom on a keyboard key zoomed twice per press.
+- Fixed: the icon search found spells with IDs above 40000 only by icon name; names are now indexed up to ID 1,600,000 without stalling the game.
+- Fixed: the copy chat window could be changed with Backspace, Delete, cut and paste.
+
 ## 0.3.0 (2026-11-06)
 
 - Tweaks > Item count: stackable items show in the top right corner of the tooltip how many of them this character

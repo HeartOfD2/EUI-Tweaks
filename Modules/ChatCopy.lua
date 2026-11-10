@@ -219,6 +219,13 @@ local function BuildWindow()
             self:HighlightText()
         end
     end)
+    -- Backspace, Delete, cut and paste change the text without OnChar: any typed change is put back
+    win.edit:HookScript("OnTextChanged", function(self, user)
+        if user and win.full and self:GetText() ~= win.full then
+            self:SetText(win.full)
+            self:HighlightText()
+        end
+    end)
     win.edit:SetScript("OnEscapePressed", function() win:Hide() end)
 
     win.status = UI.Text(win, 11, UI.DIM)

@@ -117,13 +117,17 @@ end
 
 -- ---------------------------------------------------------------- key bindings
 local binder, bindPending
-local lastClick = -1
 
+-- One press of a key sends a down and an up click, the wheel both in the same moment: only the
+-- press counts. An up click with no down before it (a client that sends only that) counts once.
 local function Click(dir)
+    local pressed = false
     return function(_, _, down)
-        local now = GetTime()
-        if down == false and now == lastClick then return end   -- press and release of one notch
-        lastClick = now
+        if down == false then
+            if pressed then pressed = false return end   -- the release of a press that was counted
+        else
+            pressed = true
+        end
         Notch(dir, 1)
     end
 end

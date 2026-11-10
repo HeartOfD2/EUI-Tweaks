@@ -102,6 +102,16 @@ function EUI.ChatStore()
     return p and type(p.chat) == "table" and p.chat or nil
 end
 
+-- the chat settings a named EllesmereUI profile holds (EllesmereUIDB.profiles[<name>].addons.EllesmereUIChat.chat),
+-- also while another profile is active; nil when there are none
+function EUI.ChatStoreOf(profileName)
+    local db = rawget(_G, "EllesmereUIDB")
+    local p = type(db) == "table" and type(db.profiles) == "table" and profileName and db.profiles[profileName]
+    local addons = type(p) == "table" and p.addons
+    local c = type(addons) == "table" and addons.EllesmereUIChat
+    return type(c) == "table" and type(c.chat) == "table" and c.chat or nil
+end
+
 function EUI.RequestVisibilityUpdate()
     local fn = Fn(Lib(), "RequestVisibilityUpdate")
     if fn then pcall(fn) end
@@ -122,6 +132,62 @@ function EUI.ChatCopyButton()
     local b = d and d.copyBtn
     if type(b) == "table" and type(b.GetScript) == "function" then return b end
     return nil
+end
+
+-- The panels EllesmereUI Chat draws around the chat: the background and the sidebar of ChatFrame1, and the
+-- frames it hangs on them (tab strip with the channel tabs, the background above the tabs, the border). They
+-- fade out over a second on their own; hiding them lets the chat vanish at once. They are unnamed frames in
+-- EllesmereUI's own namespace, so they are found by their anchors: every frame anchored to the chat background,
+-- the sidebar or the chat dock. Returns the list and the set of frames found by anchor (EllesmereUI shows those
+-- again on its own, so Hide() does not hold: the caller parks them out of sight instead).
+-- Internal, read only; empty without EUI Chat.
+-- other addons' frames (the aura buttons, for one) can answer with secret values: such a frame is skipped
+local function AnchoredTo(f, targets)
+    local ok, found = pcall(function()
+        local n = f:GetNumPoints()
+        if type(n) ~= "number" or ns.IsSecret(n) then return false end
+        for i = 1, n do
+            local _, rel = f:GetPoint(i)
+            if rel and not ns.IsSecret(rel) and targets[rel] then return true end
+        end
+        return false
+    end)
+    return ok and found
+end
+
+function EUI.ChatPanels()
+    local out, found = {}, {}
+    if not EUI.ChatActive() then return out, found end
+    local targets = {}
+    local dock = rawget(_G, "GeneralDockManager")
+    if type(dock) == "table" then targets[dock] = true end
+    for i = 1, 10 do
+        local d = ChatData(rawget(_G, "ChatFrame" .. i))
+        if d then
+            for _, key in ipairs(i == 1 and { "bg", "sidebar", "scrollBtn" } or { "bg" }) do
+                local f = d[key]
+                if type(f) == "table" and type(f.Hide) == "function" then
+                    out[#out + 1] = f
+                    if key ~= "scrollBtn" then targets[f] = true end
+                end
+            end
+        end
+    end
+    if type(EnumerateFrames) == "function" then
+        local f = EnumerateFrames()
+        while f do
+            if f ~= UIParent and not targets[f] and type(f.Hide) == "function" and AnchoredTo(f, targets) then
+                local okProt, protected = pcall(f.IsProtected, f)
+                if okProt and not protected then
+                    out[#out + 1] = f
+                    -- the game's own frames (the dock's overflow button ...) have names and read their parent: never moved
+                    if not f:GetName() then found[f] = true end
+                end
+            end
+            f = EnumerateFrames(f)
+        end
+    end
+    return out, found
 end
 
 -- ---------------------------------------------------------------- minimap zone text
@@ -156,9 +222,9 @@ end
 
 -- EllesmereUI Minimap settings of the active profile (EllesmereUIDB.profiles[<active>]
 -- .addons.EllesmereUIMinimap.minimap), nil when there are none yet
-function EUI.MinimapSettings()
+function EUI.MinimapSettings(profileName)
     local db = rawget(_G, "EllesmereUIDB")
-    local name = EUI.ActiveProfileName()
+    local name = profileName or EUI.ActiveProfileName()
     local p = type(db) == "table" and type(db.profiles) == "table" and name and db.profiles[name]
     local addons = type(p) == "table" and p.addons
     local mm = type(addons) == "table" and addons.EllesmereUIMinimap
@@ -252,6 +318,23 @@ function EUI.ActiveProfileName()
     end
     local db = rawget(_G, "EllesmereUIDB")
     return type(db) == "table" and type(db.activeProfile) == "string" and db.activeProfile or nil
+end
+
+-- EllesmereUI switches profiles live and announces nothing we may listen to (hooking its functions is not
+-- allowed), so the name is compared once a second. The timer starts with the first caller: a module that is
+-- off never asks. fn(newName, oldName) runs after a change.
+local profileWatchers, profileSeen, profileTicker = {}, nil, nil
+function EUI.OnProfileChange(fn)
+    profileWatchers[#profileWatchers + 1] = fn
+    if profileTicker then return end
+    profileSeen = EUI.ActiveProfileName()
+    profileTicker = C_Timer.NewTicker(1, function()
+        local now = EUI.ActiveProfileName()
+        if now == profileSeen then return end
+        local old = profileSeen
+        profileSeen = now
+        for i = 1, #profileWatchers do pcall(profileWatchers[i], now, old) end
+    end)
 end
 
 -- the global tables EllesmereUI saves: { name, table }, EllesmereUIDB first

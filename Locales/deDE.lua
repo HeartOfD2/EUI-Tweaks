@@ -1,6 +1,7 @@
+-- German texts. The file always loads; ns.ChooseLocale decides whether they are used.
 local _, ns = ...
-if ns.Locale() ~= "deDE" then return end
-local L = ns.L
+local L = {}
+ns.locales.deDE = L
 
 -- core and options
 L["The options open after combat."] = "Die Optionen öffnen nach dem Kampf."
@@ -33,6 +34,8 @@ L["Show chat"] = "Chat einblenden"
 L["HIDE CHAT"] = "CHAT AUSBLENDEN"
 L["Hide chat button"] = "Knopf zum Ausblenden"
 L["A button hides the chat windows, their tabs, the input box and the chat menu buttons (with EllesmereUI Chat also its background and sidebar). Enter, Edit Mode or a click bring them back."] = "Ein Knopf blendet die Chatfenster, ihre Reiter, die Eingabezeile und die Chat-Menüknöpfe aus (mit EllesmereUI Chat auch dessen Hintergrund und Seitenleiste). Enter, der Bearbeitungsmodus oder ein Klick holen sie zurück."
+L["Fade"] = "Verblassen"
+L["Off: the chat disappears at once. On: it fades out and in like the EllesmereUI chat does by itself."] = "Aus: Der Chat verschwindet sofort. An: Er blendet aus und ein, wie es der EllesmereUI-Chat von selbst tut."
 L["BUTTON"] = "KNOPF"
 L["Lock button"] = "Knopf sperren"
 L["Quick place"] = "Schnellplatz"
@@ -247,3 +250,12 @@ L["You have"] = "Du hast"
 L["%s (bags %d, bank %d)"] = "%s (Taschen %d, Bank %d)"
 L["Format"] = "Format"
 L["{count} is the count: [{count}] shows [20], {count} pcs shows 20 pcs. Without {count} the plain number shows."] = "{count} ist die Anzahl: [{count}] zeigt [20], {count} Stück zeigt 20 Stück. Ohne {count} steht dort nur die Zahl."
+
+-- general
+L["Language of EUI Tweaks."] = "Sprache von EUI Tweaks."
+L["Language"] = "Sprache"
+L["LANGUAGE"] = "SPRACHE"
+L["Automatic"] = "Automatisch"
+L["Automatic follows the language chosen in EllesmereUI, else the language of the game. A change shows after a reload (/reload)."] = "Automatisch folgt der in EllesmereUI gewählten Sprache, sonst der Sprache des Spiels. Eine Änderung gilt nach dem Neuladen (/reload)."
+L["Names of spells, items and zones always stay in the language of the game."] = "Namen von Zaubern, Items und Zonen bleiben immer in der Sprache des Spiels."
+L["The language changes after a reload (/reload)."] = "Die Sprache wechselt nach dem Neuladen (/reload)."
