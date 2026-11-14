@@ -22,6 +22,31 @@ local function Loaded(name)
 end
 EUI.Loaded = Loaded
 
+function EUI.MinimapLoaded() return Loaded("EllesmereUIMinimap") end
+
+-- EllesmereUI's language setting (General > Language): a locale such as "deDE", or nil for none / "auto"
+function EUI.DisplayLocale()
+    local db = rawget(_G, "EllesmereUIDB")
+    local v = type(db) == "table" and db.displayLocale or nil
+    if type(v) == "string" and v ~= "" and v ~= "auto" then return v end
+    return nil
+end
+
+-- opens our page in the EllesmereUI window; true when it opened
+function EUI.OpenPlugin(id, moduleKey)
+    local e = Lib()
+    local fn = Fn(e, "OpenPlugin")
+    if not fn then return false end
+    local ok, opened = pcall(fn, id, moduleKey)
+    return ok and opened and true or false
+end
+
+-- the saved-variable roots (see SavedTables): the main one holds the profiles
+local MAIN_ROOT = "EllesmereUIDB"
+function EUI.IsMainRoot(name) return name == MAIN_ROOT end
+-- "EllesmereUIMinimapDB" -> "Minimap"
+function EUI.RootLabel(name) return (name:gsub("^EllesmereUI", ""):gsub("DB$", "")) end
+
 -- ---------------------------------------------------------------- accent and font
 function EUI.Accent()
     local get = Fn(Lib(), "GetAccentColor")
@@ -340,11 +365,11 @@ end
 -- the global tables EllesmereUI saves: { name, table }, EllesmereUIDB first
 function EUI.SavedTables()
     local out = {}
-    local main = rawget(_G, "EllesmereUIDB")
-    if type(main) == "table" then out[1] = { "EllesmereUIDB", main } end
+    local main = rawget(_G, MAIN_ROOT)
+    if type(main) == "table" then out[1] = { MAIN_ROOT, main } end
     local names = {}
     for name, v in pairs(_G) do
-        if type(name) == "string" and type(v) == "table" and name ~= "EllesmereUIDB"
+        if type(name) == "string" and type(v) == "table" and name ~= MAIN_ROOT
             and name:match("^EllesmereUI%w*DB$") then
             names[#names + 1] = name
         end

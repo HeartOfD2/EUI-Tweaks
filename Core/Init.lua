@@ -164,11 +164,7 @@ function ns.OpenOptions(moduleKey)
         ns.Say(L["The options open after combat."])
         return
     end
-    local eui = rawget(_G, "EllesmereUI")
-    if type(eui) == "table" and type(eui.OpenPlugin) == "function" then
-        local ok, opened = pcall(eui.OpenPlugin, ns.PLUGIN_ID, moduleKey)
-        if ok and opened then return end
-    end
+    if ns.EUI.OpenPlugin(ns.PLUGIN_ID, moduleKey) then return end
     ns.Say(L["The EllesmereUI options could not be opened."])
 end
 

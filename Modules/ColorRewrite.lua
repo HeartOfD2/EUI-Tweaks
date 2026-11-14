@@ -155,7 +155,7 @@ function Rewrite.Search()
     for _, entry in ipairs(EUI.SavedTables()) do
         local name, t = entry[1], entry[2]
         -- the main table: with scope "active" only the active profile of all profiles
-        local only = (scope == "active" and name == "EllesmereUIDB" and active) or nil
+        local only = (scope == "active" and EUI.IsMainRoot(name) and active) or nil
         Scan(name, t, {}, {}, only)
     end
     for _, h in ipairs(hits) do h.on = true end
@@ -185,10 +185,10 @@ end
 function Rewrite.Describe(h)
     local parts = {}
     local start = 1
-    if h.root == "EllesmereUIDB" and h.path[1] == "profiles" then
+    if EUI.IsMainRoot(h.root) and h.path[1] == "profiles" then
         start = 2
-    elseif h.root ~= "EllesmereUIDB" then
-        parts[1] = (h.root:gsub("^EllesmereUI", ""):gsub("DB$", ""))
+    elseif not EUI.IsMainRoot(h.root) then
+        parts[1] = EUI.RootLabel(h.root)
     end
     for i = start, #h.path do parts[#parts + 1] = tostring(h.path[i]) end
     if h.kind == "flat" then parts[#parts + 1] = h.key .. "R/G/B"

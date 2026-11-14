@@ -132,7 +132,14 @@ local function Click(dir)
     end
 end
 
-local function OnRegen()
+local applied   -- the keys bound now ("KEY=button" list as text); nil while nothing is bound
+
+local function OnEvent(_, event)
+    if event == "UPDATE_BINDINGS" then
+        -- the player changed the key bindings: follow them (only while the camera tweak is on)
+        if Camera.Get("on") then Camera.Apply() end
+        return
+    end
     binder:UnregisterEvent("PLAYER_REGEN_ENABLED")
     if bindPending then
         bindPending = false
@@ -140,33 +147,50 @@ local function OnRegen()
     end
 end
 
+local function WantedBindings()
+    local list = {}
+    for action, name in pairs({ CAMERAZOOMIN = "EUITweaksZoomIn", CAMERAZOOMOUT = "EUITweaksZoomOut" }) do
+        for _, key in ipairs({ GetBindingKey(action) }) do
+            list[#list + 1] = key .. "=" .. name
+        end
+    end
+    table.sort(list)
+    return list
+end
+
 local function BindWheel()
     if type(SetOverrideBindingClick) ~= "function" or type(GetBindingKey) ~= "function" then return end
     if not binder then
         binder = CreateFrame("Frame")
-        binder:SetScript("OnEvent", OnRegen)
+        binder:SetScript("OnEvent", OnEvent)
         for dir, name in pairs({ [-1] = "EUITweaksZoomIn", [1] = "EUITweaksZoomOut" }) do
             local b = CreateFrame("Button", name, UIParent)
             b:RegisterForClicks("AnyDown", "AnyUp")
             b:SetScript("OnClick", Click(dir))
         end
     end
+    binder:RegisterEvent("UPDATE_BINDINGS")
     if InCombatLockdown() then
         bindPending = true
         binder:RegisterEvent("PLAYER_REGEN_ENABLED")
         return
     end
+    local wanted = WantedBindings()
+    local signature = table.concat(wanted, ";")
+    if signature == applied then return end   -- nothing changed: no need to touch the bindings
     ClearOverrideBindings(binder)
-    for action, name in pairs({ CAMERAZOOMIN = "EUITweaksZoomIn", CAMERAZOOMOUT = "EUITweaksZoomOut" }) do
-        for _, key in ipairs({ GetBindingKey(action) }) do
-            SetOverrideBindingClick(binder, true, key, name, "LeftButton")
-        end
+    for _, entry in ipairs(wanted) do
+        local key, name = entry:match("^(.*)=([^=]+)$")
+        SetOverrideBindingClick(binder, true, key, name, "LeftButton")
     end
+    applied = signature
 end
 
 local function UnbindWheel()
     bindPending = false
+    applied = nil
     if not binder then return end
+    binder:UnregisterEvent("UPDATE_BINDINGS")
     if InCombatLockdown() then
         bindPending = true
         binder:RegisterEvent("PLAYER_REGEN_ENABLED")

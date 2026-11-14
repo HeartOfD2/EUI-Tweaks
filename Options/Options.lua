@@ -159,7 +159,7 @@ local function BuildZone(W, parent, y)
     _, h = W:Toggle(parent, L["Show sub zone"], y, function() return ZoneText.Get("on") end,
         function(v) Set("on", v) Refresh() end); y = y - h
     y = y - Hint(parent, y, L["Shows the sub zone in a second box next to the EllesmereUI minimap zone text, in the same style. Switching on turns off EllesmereUI's own \"Display Sub Zone\" (Minimap > Zone Text Settings), so the zone box keeps the zone name; switching off turns it back on."])
-    if not EUI.Loaded("EllesmereUIMinimap") then
+    if not EUI.MinimapLoaded() then
         y = y - Hint(parent, y, L["EllesmereUI Minimap is not loaded: the box has nothing to attach to."], WARN)
     end
     local r = ZoneText.ranges
@@ -241,15 +241,26 @@ end
 -- ---------------------------------------------------------------- ColorRewrite
 local function Swatch(hex) return Rewrite.HexToRGB(hex) end
 
-local function ConfirmAndReload(text, action)
-    StaticPopupDialogs.EUITWEAKS_CONFIRM = {
-        text = text, button1 = ACCEPT, button2 = CANCEL, timeout = 0, whileDead = true, hideOnEscape = true,
-        OnAccept = function()
-            local n = action()
-            if n > 0 then ReloadUI() end
-        end,
-    }
-    StaticPopup_Show("EUITWEAKS_CONFIRM")
+-- The caller has counted the places already (and found at least one). The confirm click asks for the
+-- reload first and runs the action after it: WoW Forever reloads only when the reload comes first (E-11).
+local function ConfirmAndReload(title, text, action)
+    EUI.ConfirmReload(title, text, ACCEPT, function() action() end)
+end
+
+-- The list is built again on every page rebuild, but its frames are made once and reused: the page
+-- hands over the same parent or a new one, the frames follow it (frames are never freed in the game).
+local hitUI = { rows = {} }
+
+local function HitRow(i)
+    local row = hitUI.rows[i]
+    if row then return row end
+    -- UI.Check reads the value once while it is built, before `row` is set
+    row = UI.Check(hitUI.list, "", function() return row ~= nil and row.hit ~= nil and row.hit.on end, function(v)
+        row.hit.on = v
+        hitUI.count()
+    end)
+    hitUI.rows[i] = row
+    return row
 end
 
 local function HitList(parent, y)
@@ -257,37 +268,51 @@ local function HitList(parent, y)
     local hits = Rewrite.Hits()
     local pad = EUI.ContentPad()
     local width = parent:GetWidth() - 2 * pad
-    local list = CreateFrame("Frame", nil, parent)
+    if not hitUI.list then
+        hitUI.list = CreateFrame("Frame", nil, parent)
+        hitUI.head = UI.Text(hitUI.list, 13)
+        hitUI.head:SetPoint("TOPLEFT", 20, -8)
+        hitUI.more = UI.Text(hitUI.list, 12, UI.DIM)
+    end
+    local list, head, more = hitUI.list, hitUI.head, hitUI.more
+    list:SetParent(parent)
+    list:ClearAllPoints()
     list:SetPoint("TOPLEFT", parent, "TOPLEFT", pad, y)
     list:SetWidth(width)
+    list:Show()
     local top = 8
-    local head = UI.Text(list, 13)
-    head:SetPoint("TOPLEFT", 20, -top)
+    for _, row in ipairs(hitUI.rows) do row.hit = nil row:Hide() end
+    more:Hide()
     if not Rewrite.HitsCurrent() then
         head:SetText(L["Press \"Search\" to list the places that use the color."])
         list:SetHeight(top + 24)
         return top + 24
     end
-    local on = 0
-    for _, hit in ipairs(hits) do if hit.on then on = on + 1 end end
-    head:SetText(L["%d places found, %d selected"]:format(#hits, on))
+    hitUI.count = function()
+        local n = 0
+        for _, x in ipairs(hits) do if x.on then n = n + 1 end end
+        head:SetText(L["%d places found, %d selected"]:format(#hits, n))
+    end
+    hitUI.count()
     local rowY = top + 24
     local MAX = 400
     for i, hit in ipairs(hits) do
         if i > MAX then
-            local more = UI.Text(list, 12, UI.DIM)
+            more:ClearAllPoints()
             more:SetPoint("TOPLEFT", 20, -rowY)
             more:SetText(L["... and %d more (all are replaced when selected)"]:format(#hits - MAX))
+            more:Show()
             rowY = rowY + 22
             break
         end
-        local c = UI.Check(list, Rewrite.Describe(hit), function() return hit.on end, function(v)
-            hit.on = v
-            local n = 0
-            for _, x in ipairs(hits) do if x.on then n = n + 1 end end
-            head:SetText(L["%d places found, %d selected"]:format(#hits, n))
-        end)
+        local c = HitRow(i)
+        c.hit = hit
+        c.text:SetText(Rewrite.Describe(hit))
+        c:SetWidth(20 + c.text:GetStringWidth() + 4)
+        c:ClearAllPoints()
         c:SetPoint("TOPLEFT", 20, -rowY)
+        c:Refresh()
+        c:Show()
         rowY = rowY + 22
     end
     list:SetHeight(rowY + 8)
@@ -347,7 +372,8 @@ local function BuildColors(W, parent, y)
             local n = 0
             for _, hit in ipairs(Rewrite.Hits()) do if hit.on then n = n + 1 end end
             if n == 0 then ns.Say(L["Nothing to replace."]) Rebuild() return end
-            ConfirmAndReload(L["Replace #%s with #%s in %d places and reload the UI?"]:format(Rewrite.Source(), Rewrite.Target(), n),
+            ConfirmAndReload(L["Replace and reload"],
+                L["Replace #%s with #%s in %d places and reload the UI?"]:format(Rewrite.Source(), Rewrite.Target(), n),
                 Rewrite.Replace)
         end }); y = y - h
     local undo = Rewrite.UndoInfo()
@@ -356,7 +382,8 @@ local function BuildColors(W, parent, y)
           onClick = function()
             local info = Rewrite.UndoInfo()
             if not info then return end
-            ConfirmAndReload(L["Put #%s back in %d places (instead of #%s) and reload the UI?"]:format(info.source, info.count, info.target),
+            ConfirmAndReload(L["Undo last replace"],
+                L["Put #%s back in %d places (instead of #%s) and reload the UI?"]:format(info.source, info.count, info.target),
                 Rewrite.Undo)
         end },
         { type = "button", text = L["Reload UI"], width = 180, onClick = function() ReloadUI() end }); y = y - h

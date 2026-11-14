@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.1 (2026-11-14)
+
+- Fixed: ColorRewrite "Replace and reload" and "Undo" now ask for the reload first, as WoW Forever requires.
+- Fixed: the camera zoom keys follow changes in the key bindings at once, without a reload.
+- Fixed: the ColorRewrite hit list no longer creates new frames on every rebuild.
+- Internal: all EllesmereUI access is kept in one adapter file.
+
 ## 0.4.0 (2026-11-10)
 
 - New: language choice (Tweaks+ > General): Automatic, English or Deutsch, applied after /reload. Spell, item and zone names stay in the game's language.

@@ -18,11 +18,10 @@ ns.L = setmetatable({}, {
 })
 
 -- "Automatic": EllesmereUI's language setting (General > Language), else the client.
--- EllesmereUI is a dependency, so its saved variables are readable here.
+-- Called from ADDON_LOADED, when the adapter (ns.EUI) exists; the access itself lives there.
 function ns.AutoLocale()
-    local db = rawget(_G, "EllesmereUIDB")
-    local override = type(db) == "table" and db.displayLocale or nil
-    local locale = (type(override) == "string" and override ~= "auto" and override ~= "") and override or GetLocale()
+    local override = ns.EUI and ns.EUI.DisplayLocale() or nil
+    local locale = override or GetLocale()
     if type(locale) ~= "string" or locale == "" or locale == "enGB" then locale = "enUS" end
     return locale
 end
