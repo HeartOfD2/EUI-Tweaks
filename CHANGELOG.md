@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.2 (2026-11-19)
+
+- Fixed: EUI Tweaks no longer makes the EllesmereUI "Unit Frames" entry unclickable. The TOC listed EllesmereUI Options as an optional dependency, which loaded that load-on-demand addon at startup, too early for EllesmereUI to register the Unit Frames page.
+
 ## 0.4.1 (2026-11-14)
 
 - Fixed: ColorRewrite "Replace and reload" and "Undo" now ask for the reload first, as WoW Forever requires.
